@@ -6,7 +6,7 @@ import java.util.Stack;
 
 public class Main {
     public static void main(String[] args) {
-        String arquivo = "ratings.csv";
+        String arquivo = "datasets/ratings.csv";
         int quantidade = 100;
 
         // LISTA 
