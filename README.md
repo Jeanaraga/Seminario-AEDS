@@ -9,6 +9,7 @@ Este repositório contém os materiais e implementações utilizados no seminár
 * Cada implementação do Shell Sort está organizada por linguagem:
 
   * `Java-ShellSort/`
+  * `Python ShellSort`
 
 * Dentro de cada pasta, há implementações para diferentes **estruturas de dados**:
 
