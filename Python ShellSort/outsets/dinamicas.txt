@@ -1,0 +1,20 @@
+Tamanho: 100
+lista_ligada: 1.579 ms | 18.1 KB
+pilha_ligada: 0.790 ms | 18.0 KB
+fila_ligada: 9.273 ms | 18.0 KB
+
+Tamanho: 1000
+lista_ligada: 456.139 ms | 152.7 KB
+pilha_ligada: 85.951 ms | 157.4 KB
+fila_ligada: 37.346 ms | 157.4 KB
+
+Tamanho: 10000
+lista_ligada: 5733.273 ms | 1563.1 KB
+pilha_ligada: 182.868 ms | 1567.9 KB
+fila_ligada: 178.258 ms | 1567.9 KB
+
+Tamanho: 100000
+lista_ligada: 509300.941 ms | 15621.6 KB
+pilha_ligada: 2361.940 ms | 15626.3 KB
+fila_ligada: 2388.596 ms | 15626.3 KB
+
