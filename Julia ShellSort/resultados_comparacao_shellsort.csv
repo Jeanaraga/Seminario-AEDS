@@ -1,0 +1,7 @@
+tipo_estrutura,estrutura,tempo_ms,memoria_bytes,memoria_formatada
+linear,lista,45.463386,8000048,7.63 MB
+linear,fila,44.477816000000004,8000048,7.63 MB
+linear,pilha,45.816294,8000048,7.63 MB
+dinamica,lista,66.575965,16000008,15.26 MB
+dinamica,fila,86.044835,16000016,15.26 MB
+dinamica,pilha,76.521952,16000008,15.26 MB
