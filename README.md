@@ -10,6 +10,9 @@ Este repositório contém os materiais e implementações utilizados no seminár
 
   * `Java-ShellSort/`
   * `Python ShellSort`
+  * `Julia ShellSort`
+  * `C ShellSort`
+  * `C++ ShellSort`
 
 * Dentro de cada pasta, há implementações para diferentes **estruturas de dados**:
 
