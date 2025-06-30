@@ -1,8 +1,8 @@
 #ifndef SHELLSORT_PILHADINAMICA_H
 #define SHELLSORT_PILHADINAMICA_H
 
-#define LINHA_MAX 100
-#define MAX 100
+
+#include "../config.h"
 
 typedef struct {
     int id;

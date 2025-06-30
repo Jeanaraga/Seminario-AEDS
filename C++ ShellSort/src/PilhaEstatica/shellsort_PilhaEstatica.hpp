@@ -1,5 +1,5 @@
-#ifndef PILHA_ESTATICA_HEAP_HPP
-#define PILHA_ESTATICA_HEAP_HPP
+#ifndef PILHA_ESTATICA_HPP
+#define PILHA_ESTATICA_HPP
 
 #include <stdexcept> // Para std::runtime_error
 
@@ -46,6 +46,13 @@ public:
         return elementos[topo];
     }
 
+    T* getData() {
+    if (topo < 0) {
+        throw std::runtime_error("Pilha vazia");
+    }
+    return elementos;
+}
+
     // Retorna o número de elementos na pilha
     size_t size() const {
         return static_cast<size_t>(topo + 1);
@@ -62,4 +69,4 @@ public:
     }
 };
 
-#endif // PILHA_ESTATICA_HEAP_HPP
+#endif 

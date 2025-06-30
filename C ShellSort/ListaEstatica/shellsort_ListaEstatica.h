@@ -5,9 +5,7 @@
 #include   <stdlib.h>
 #include   <string.h>
 
-
-#define LINHA_MAX 100
-#define MAX 100
+#include "../config.h"
 
 
 typedef struct{

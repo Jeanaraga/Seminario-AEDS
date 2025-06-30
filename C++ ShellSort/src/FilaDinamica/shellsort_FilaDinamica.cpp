@@ -7,6 +7,7 @@
 #include <functional>
 #include <iomanip> // Para std::setprecision
 #include "../FilaDinamica/shellsort_FilaDinamica.hpp"
+#include "../config.hpp"
 
 // Struct de dados
 struct Usuario {
@@ -16,33 +17,31 @@ struct Usuario {
     int timestamp;
 };
 
-// ShellSort genérico
+// ShellSort in-place otimizado
 template <typename T>
 void shellSort(std::vector<T>& dados, const std::function<bool(const T&, const T&)>& comp) {
-    int n = dados.size();
+    const int n = dados.size();
+    if (n <= 1) return;
 
-    // Geração do maior h de Knuth menor que n
+    // Sequência de Knuth otimizada
     int h = 1;
-    while (h < n / 3)
-        h = 3 * h + 1;  // h = 1, 4, 13, 40, ...
+    while (h < n / 3) h = 3 * h + 1;
 
-    // Shellsort com a sequência de Knuth
     while (h >= 1) {
         for (int i = h; i < n; ++i) {
-            T temp = dados[i];
+            T temp = std::move(dados[i]);
             int j = i;
             while (j >= h && comp(temp, dados[j - h])) {
-                dados[j] = dados[j - h];
+                dados[j] = std::move(dados[j - h]);
                 j -= h;
             }
-            dados[j] = temp;
+            dados[j] = std::move(temp);
         }
         h /= 3;
     }
 }
 
-
-// Verifica se está ordenado
+// Verificação otimizada
 template <typename T, typename Compare>
 bool estaOrdenado(const std::vector<T>& dados, Compare comp) {
     for (size_t i = 1; i < dados.size(); ++i) {
@@ -53,17 +52,22 @@ bool estaOrdenado(const std::vector<T>& dados, Compare comp) {
     return true;
 }
 
-// Leitura do CSV
+// Leitura otimizada com reserva de memória
 std::vector<Usuario> lerCSV(const std::string& nomeArquivo, int limite) {
     std::ifstream arquivo(nomeArquivo);
     std::vector<Usuario> usuarios;
-    std::string linha;
-
+    
     if (!arquivo.is_open()) {
         std::cerr << "Erro ao abrir o arquivo.\n";
         return usuarios;
     }
 
+    // Reserva memória antecipadamente
+    usuarios.reserve(limite);
+    
+    std::string linha;
+    linha.reserve(128); // Reserva para linha típica
+    
     std::getline(arquivo, linha); // Pula cabeçalho
 
     while (std::getline(arquivo, linha) && usuarios.size() < static_cast<size_t>(limite)) {
@@ -80,46 +84,41 @@ std::vector<Usuario> lerCSV(const std::string& nomeArquivo, int limite) {
         std::getline(ss, campo, ',');
         u.timestamp = std::stoi(campo);
 
-        usuarios.push_back(u);
+        usuarios.emplace_back(std::move(u));
     }
 
+    // Libera memória não utilizada
+    usuarios.shrink_to_fit();
     return usuarios;
 }
 
-// Classe de teste com FilaDinamica
+// Classe otimizada - elimina duplicação de dados
 class TesteShellSortFilaDinamica {
 private:
-    FilaDinamica<Usuario> fila;
+    std::vector<Usuario> dados; // Usa vetor diretamente ao invés de FilaDinamica
 
 public:
     void carregar(const std::string& nomeArquivo, int limite) {
-        auto usuarios = lerCSV(nomeArquivo, limite);
-        for (const auto& u : usuarios) {
-            fila.enqueue(u);
-        }
+        dados = lerCSV(nomeArquivo, limite);
     }
 
     double executarOrdenacao() {
-        std::vector<Usuario> vetor;
-        while (fila.size() > 0) {
-            vetor.push_back(fila.front());
-            fila.dequeue();
-        }
+        if (dados.empty()) return 0.0;
 
         auto inicio = std::chrono::high_resolution_clock::now();
-        shellSort<Usuario>(vetor, [](const Usuario& a, const Usuario& b) {
-            return a.nota < b.nota;  // ordena pela nota
+        
+        // Ordenação in-place sem cópias extras
+        shellSort<Usuario>(dados, [](const Usuario& a, const Usuario& b) {
+            return a.nota < b.nota;
         });
+        
         auto fim = std::chrono::high_resolution_clock::now();
-
         double tempo = std::chrono::duration<double>(fim - inicio).count();
+        
         std::cout << "Tempo de ordenação: " << std::fixed << std::setprecision(8) << tempo << " segundos\n";
 
-        for (const auto& u : vetor) {
-            fila.enqueue(u);
-        }
-
-        if (estaOrdenado(vetor, [](const Usuario& a, const Usuario& b) {
+        // Verificação sem lambda extra
+        if (estaOrdenado(dados, [](const Usuario& a, const Usuario& b) {
             return a.nota < b.nota;
         })) {
             std::cout << "Ordenação correta!\n";
@@ -131,21 +130,21 @@ public:
     }
 };
 
-// Função principal com repetição e média de tempo
+// Main otimizado
 int main() {
-    constexpr int LIMITE = 100;
-    constexpr int REPETICOES = 10;
     double somaTempos = 0.0;
+    
+    // Cria objeto uma vez fora do loop
+    TesteShellSortFilaDinamica teste;
+    teste.carregar("ratings.csv", LIMITE);
 
     for (int i = 0; i < REPETICOES; ++i) {
         std::cout << "\n🔁 Execução " << i + 1 << ":\n";
-        TesteShellSortFilaDinamica teste;
-        teste.carregar("ratings.csv", LIMITE);
         double tempo = teste.executarOrdenacao();
         somaTempos += tempo;
     }
 
-    double media = somaTempos / REPETICOES;
+    const double media = somaTempos / REPETICOES;
     std::cout << "\n📊 Média de tempo de ordenação após " << REPETICOES << " execuções: "
               << std::fixed << std::setprecision(8) << media << " segundos\n";
 

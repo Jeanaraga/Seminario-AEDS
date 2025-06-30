@@ -1,110 +1,151 @@
-// ============================
-// main_fila_estatica.cpp
-// ============================
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <chrono>
 #include <string>
 #include <iomanip>
 #include <stdexcept>
 #include "shellsort_FilaEstatica.hpp"
+#include "../config.hpp"
 
+// Struct compacta - 16 bytes por usuário
 struct Usuario {
-    int id;
-    int movieID;
-    float nota;
-    int timestamp;
+    int id = 0;
+    int movieID = 0;
+    float nota = 0.0f;
+    int timestamp = 0;
 };
 
-// Shellsort genérico
+// Shellsort que trabalha diretamente na fila circular
 template <typename T, typename Compare>
-void shellsort(std::vector<T>& vetor, Compare compare) {
-    int n = vetor.size();
-    int h = 1;
+void shellsort_circular(FilaEstatica<T>& fila, Compare compare) {
+    size_t n = fila.size();
+    if (n <= 1) return;
+    
+    // Sequência de Knuth
+    size_t h = 1;
     while (h < n / 3) h = 3 * h + 1;
+    
     while (h >= 1) {
-        for (int i = h; i < n; ++i) {
-            T temp = vetor[i];
-            int j = i;
-            while (j >= h && compare(temp, vetor[j - h])) {
-                vetor[j] = vetor[j - h];
+        for (size_t i = h; i < n; ++i) {
+            T temp = fila.getAt(i);
+            size_t j = i;
+            
+            while (j >= h && compare(temp, fila.getAt(j - h))) {
+                fila.setAt(j, fila.getAt(j - h));
                 j -= h;
             }
-            vetor[j] = temp;
+            fila.setAt(j, temp);
         }
         h /= 3;
     }
 }
 
-// Verificação da ordenação
+// Verificação de ordenação
 template <typename T, typename Compare>
-bool estaOrdenado(const std::vector<T>& dados, Compare comp) {
-    for (size_t i = 1; i < dados.size(); ++i) {
-        if (comp(dados[i], dados[i - 1])) return false;
+bool estaOrdenado(const FilaEstatica<T>& fila, Compare comp) {
+    size_t n = fila.size();
+    for (size_t i = 1; i < n; ++i) {
+        if (comp(fila.getAt(i), fila.getAt(i - 1))) return false;
     }
     return true;
 }
 
-// Leitura do CSV
-std::vector<Usuario> lerCSV(const std::string& nomeArquivo, int limite) {
+// Leitura otimizada do CSV
+bool lerCSV_direto(const std::string& nomeArquivo, FilaEstatica<Usuario>& fila, int limite) {
     std::ifstream arquivo(nomeArquivo);
-    std::vector<Usuario> usuarios;
-    std::string linha;
     if (!arquivo.is_open()) {
         std::cerr << "Erro ao abrir o arquivo.\n";
-        return usuarios;
+        return false;
     }
+    
+    std::string linha;
+    linha.reserve(128); // Reserva para evitar realocações
     std::getline(arquivo, linha); // pula cabeçalho
-    while (std::getline(arquivo, linha) && usuarios.size() < static_cast<size_t>(limite)) {
+    
+    int count = 0;
+    while (std::getline(arquivo, linha) && count < limite) {
         std::stringstream ss(linha);
         std::string campo;
-        Usuario u;
-        std::getline(ss, campo, ','); u.id = std::stoi(campo);
-        std::getline(ss, campo, ','); u.movieID = std::stoi(campo);
-        std::getline(ss, campo, ','); u.nota = std::stof(campo);
-        std::getline(ss, campo, ','); u.timestamp = std::stoi(campo);
-        usuarios.push_back(u);
+        Usuario u{}; // Zero-initialized
+        
+        if (std::getline(ss, campo, ',') && !campo.empty()) {
+            u.id = std::stoi(campo);
+        }
+        if (std::getline(ss, campo, ',') && !campo.empty()) {
+            u.movieID = std::stoi(campo);
+        }
+        if (std::getline(ss, campo, ',') && !campo.empty()) {
+            u.nota = std::stof(campo);
+        }
+        if (std::getline(ss, campo, ',') && !campo.empty()) {
+            u.timestamp = std::stoi(campo);
+        }
+        
+        try {
+            fila.enfileirar(u);
+            count++;
+        } catch (const std::runtime_error&) {
+            break; // Fila cheia
+        }
     }
-    return usuarios;
+    
+    return true;
 }
 
+// Classe de teste otimizada - SEM buffer adicional
 class TesteShellSortFilaEstatica {
 private:
     FilaEstatica<Usuario> fila;
+
 public:
     TesteShellSortFilaEstatica(size_t cap) : fila(cap) {}
-    void carregar(const std::string& arq, int lim) {
-        auto v = lerCSV(arq, lim);
-        for (auto& u : v) fila.enfileirar(u);
+
+    bool carregar(const std::string& arq, int lim) {
+        return lerCSV_direto(arq, fila, lim);
     }
+
     double executar() {
-        std::vector<Usuario> v;
-        while (!fila.empty()) {
-            v.push_back(fila.frenteElemento());
-            fila.desenfileirar();
-        }
+        size_t n = fila.size();
+        if (n == 0) return 0.0;
+        
         auto t0 = std::chrono::high_resolution_clock::now();
-        shellsort<Usuario>(v, [](const Usuario &a, const Usuario &b){ return a.nota < b.nota; });
+        
+        // Ordena diretamente na fila circular - SEM buffer adicional
+        shellsort_circular(fila, [](const Usuario &a, const Usuario &b){ 
+            return a.nota < b.nota; 
+        });
+        
         auto t1 = std::chrono::high_resolution_clock::now();
         double dt = std::chrono::duration<double>(t1 - t0).count();
-        std::cout << "Tempo (fila): " << std::fixed << std::setprecision(8) << dt << "s\n";
-        std::cout << (estaOrdenado<Usuario>(v, [](const Usuario&a, const Usuario&b){return a.nota<b.nota;}) ? "OK\n" : "ERRO\n");
+        
+        std::cout << "Tempo: " << std::fixed << std::setprecision(8) << dt << "s\n";
+        
+        bool ordenado = estaOrdenado(fila, [](const Usuario&a, const Usuario&b){
+            return a.nota < b.nota;
+        });
+        
+        std::cout << (ordenado ? "OK\n" : "ERRO\n");
         return dt;
     }
 };
 
 int main() {
-    const int LIM = 100;
-    const int REP = 10;
-    double soma = 0;
-    for (int i = 0; i < REP; ++i) {
-        std::cout << "Execucao " << i+1 << "\n";
-        TesteShellSortFilaEstatica t(LIM);
-        t.carregar("ratings.csv", LIM);
-        soma += t.executar();
+    double somaTempos = 0.0;
+    
+    // Cria uma única instância e reutiliza
+    TesteShellSortFilaEstatica teste(LIMITE);
+    teste.carregar("ratings.csv", LIMITE);
+    
+    for (int i = 0; i < REPETICOES; ++i) {
+        std::cout << "\n🔁 Execução " << i + 1 << ":\n";
+        double tempo = teste.executar();
+        somaTempos += tempo;
     }
-    std::cout << "Média fila: " << std::fixed << std::setprecision(8) << soma/REP << "s\n";
+    
+    double media = somaTempos / REPETICOES;
+    std::cout << "\n📊 Média: " << std::fixed << std::setprecision(8) 
+              << media << " segundos\n";
+
     return 0;
 }

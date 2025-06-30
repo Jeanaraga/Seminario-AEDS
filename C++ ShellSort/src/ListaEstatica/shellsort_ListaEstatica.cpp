@@ -1,107 +1,139 @@
-// ============================
-// main_lista_estatica.cpp
-// ============================
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <chrono>
 #include <string>
 #include <iomanip>
 #include <stdexcept>
 #include "shellsort_ListaEstatica.hpp"
+#include "../config.hpp"
 
+// Struct compacta - 16 bytes por usuário
 struct Usuario {
-    int id;
-    int movieID;
-    float nota;
-    int timestamp;
+    int id;        // 4 bytes
+    int movieID;   // 4 bytes  
+    float nota;    // 4 bytes
+    int timestamp; // 4 bytes
 };
 
-// Shellsort genérico
+// Shellsort otimizado que trabalha diretamente no array
 template <typename T, typename Compare>
-void shellsort(std::vector<T>& vetor, Compare compare) {
-    int n = vetor.size();
-    int h = 1;
+void shellsort_inplace(T* arr, size_t n, Compare compare) {
+    if (n <= 1) return;
+    
+    // Sequência de Knuth
+    size_t h = 1;
     while (h < n / 3) h = 3 * h + 1;
+    
     while (h >= 1) {
-        for (int i = h; i < n; ++i) {
-            T temp = vetor[i];
-            int j = i;
-            while (j >= h && compare(temp, vetor[j - h])) {
-                vetor[j] = vetor[j - h];
+        for (size_t i = h; i < n; ++i) {
+            T temp = arr[i];
+            size_t j = i;
+            
+            while (j >= h && compare(temp, arr[j - h])) {
+                arr[j] = arr[j - h];
                 j -= h;
             }
-            vetor[j] = temp;
+            arr[j] = temp;
         }
         h /= 3;
     }
 }
 
-// Verificação da ordenação
+// Verificação de ordenação
 template <typename T, typename Compare>
-bool estaOrdenado(const std::vector<T>& dados, Compare comp) {
-    for (size_t i = 1; i < dados.size(); ++i) {
+bool estaOrdenado(const T* dados, size_t n, Compare comp) {
+    for (size_t i = 1; i < n; ++i) {
         if (comp(dados[i], dados[i - 1])) return false;
     }
     return true;
 }
 
-// Leitura do CSV
-std::vector<Usuario> lerCSV(const std::string& nomeArquivo, int limite) {
+// Leitura otimizada do CSV
+bool lerCSV_direto(const std::string& nomeArquivo, ListaEstatica<Usuario>& lista, int limite) {
     std::ifstream arquivo(nomeArquivo);
-    std::vector<Usuario> usuarios;
-    std::string linha;
     if (!arquivo.is_open()) {
         std::cerr << "Erro ao abrir o arquivo.\n";
-        return usuarios;
+        return false;
     }
+    
+    std::string linha;
     std::getline(arquivo, linha); // pula cabeçalho
-    while (std::getline(arquivo, linha) && usuarios.size() < static_cast<size_t>(limite)) {
+    
+    int count = 0;
+    while (std::getline(arquivo, linha) && count < limite) {
         std::stringstream ss(linha);
         std::string campo;
         Usuario u;
-        std::getline(ss, campo, ','); u.id = std::stoi(campo);
-        std::getline(ss, campo, ','); u.movieID = std::stoi(campo);
-        std::getline(ss, campo, ','); u.nota = std::stof(campo);
-        std::getline(ss, campo, ','); u.timestamp = std::stoi(campo);
-        usuarios.push_back(u);
+        
+        if (std::getline(ss, campo, ',')) u.id = std::stoi(campo);
+        if (std::getline(ss, campo, ',')) u.movieID = std::stoi(campo);
+        if (std::getline(ss, campo, ',')) u.nota = std::stof(campo);
+        if (std::getline(ss, campo, ',')) u.timestamp = std::stoi(campo);
+        
+        try {
+            lista.inserir(u);
+            count++;
+        } catch (const std::runtime_error&) {
+            break; // Lista cheia
+        }
     }
-    return usuarios;
+    
+    return true;
 }
 
+// Classe de teste
 class TesteShellSortListaEstatica {
 private:
     ListaEstatica<Usuario> lista;
+
 public:
     TesteShellSortListaEstatica(size_t cap) : lista(cap) {}
-    void carregar(const std::string& arq, int lim) {
-        auto v = lerCSV(arq, lim);
-        for (auto& u : v) lista.inserir(u);
+
+    bool carregar(const std::string& arq, int lim) {
+        return lerCSV_direto(arq, lista, lim);
     }
-    double executar() {
-        std::vector<Usuario> v;
-        for (size_t i = 0; i < lista.size(); ++i) v.push_back(lista.get(i));
+
+    double executar() {        
         auto t0 = std::chrono::high_resolution_clock::now();
-        shellsort<Usuario>(v, [](const Usuario &a, const Usuario &b){ return a.nota < b.nota; });
+        
+        shellsort_inplace<Usuario>(
+            lista.data(), 
+            lista.size(), 
+            [](const Usuario &a, const Usuario &b){ return a.nota < b.nota; }
+        );
+        
         auto t1 = std::chrono::high_resolution_clock::now();
         double dt = std::chrono::duration<double>(t1 - t0).count();
-        std::cout << "Tempo (lista): " << std::fixed << std::setprecision(8) << dt << "s\n";
-        std::cout << (estaOrdenado<Usuario>(v, [](const Usuario&a, const Usuario&b){return a.nota<b.nota;}) ? "OK\n" : "ERRO\n");
+        
+        std::cout << "Tempo: " << std::fixed << std::setprecision(8) << dt << "s\n";
+        
+        bool ordenado = estaOrdenado<Usuario>(
+            lista.data(), 
+            lista.size(), 
+            [](const Usuario&a, const Usuario&b){return a.nota<b.nota;}
+        );
+        
+        std::cout << (ordenado ? "OK\n" : "ERRO\n");
         return dt;
     }
 };
 
 int main() {
-    const int LIM = 100;
-    const int REP = 10;
-    double soma = 0;
-    for (int i = 0; i < REP; ++i) {
-        std::cout << "Execucao " << i+1 << "\n";
-        TesteShellSortListaEstatica t(LIM);
-        t.carregar("ratings.csv", LIM);
-        soma += t.executar();
+    double somaTempos = 0.0;
+    
+    for (int i = 0; i < REPETICOES; ++i) {
+        std::cout << "\n🔁 Execução " << i + 1 << ":\n";
+        
+        TesteShellSortListaEstatica teste(LIMITE);
+        teste.carregar("ratings.csv", LIMITE);
+        double tempo = teste.executar();
+        somaTempos += tempo;
     }
-    std::cout << "Média lista: " << std::fixed << std::setprecision(8) << soma/REP << "s\n";
+    
+    double media = somaTempos / REPETICOES;
+    std::cout << "\n📊 Média: " << std::fixed << std::setprecision(8) 
+              << media << " segundos\n";
+
     return 0;
 }

@@ -1,7 +1,8 @@
 #ifndef SHELLSORT_FILADINAMICA_H
 #define SHELLSORT_FILADINAMICA_H
 
-#define MAX 100
+
+#include "../config.h"
 
 typedef struct {
     int id;

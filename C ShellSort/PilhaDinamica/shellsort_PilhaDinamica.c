@@ -3,6 +3,13 @@
 #include <string.h>
 #include <time.h>
 #include "shellsort_PilhaDinamica.h"
+#include <sys/resource.h>
+
+long getMemoryKB() {
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    return usage.ru_maxrss;  // Em KB no Linux
+}   
 
 void inicializarPilha(Pilha* p) {
     p->topo = NULL;
@@ -16,7 +23,6 @@ int estaVazia(Pilha* p) {
 int empilhar(Pilha* p, Usuarios u) {
     No* novo = malloc(sizeof(No));
     if (!novo) return 0;
-
     novo->dado = u;
     novo->prox = p->topo;
     p->topo = novo;
@@ -26,7 +32,6 @@ int empilhar(Pilha* p, Usuarios u) {
 
 int desempilhar(Pilha* p, Usuarios* u) {
     if (estaVazia(p)) return 0;
-
     No* temp = p->topo;
     *u = temp->dado;
     p->topo = temp->prox;
@@ -48,37 +53,56 @@ int lerCSV(const char* nomeArquivo, Pilha* p) {
         printf("Erro ao abrir o arquivo\n");
         return 0;
     }
-
+    
     char linha[LINHA_MAX];
     int total = 0;
-
-    fgets(linha, LINHA_MAX, arquivo); 
-
-    while (fgets(linha, LINHA_MAX, arquivo) && total < MAX) {
+    
+    // Pula o cabeçalho
+    fgets(linha, LINHA_MAX, arquivo);
+    
+    while (fgets(linha, LINHA_MAX, arquivo) && total < LIMITE_LEITURA) {
         Usuarios u;
         sscanf(linha, "%d,%d,%f,%d", &u.id, &u.movieID, &u.nota, &u.timestamp);
         if (!empilhar(p, u)) break;
         total++;
     }
-
+    
     fclose(arquivo);
     return total;
 }
 
-void shellsort(Usuarios usuarios[], int n) {
-    int gap, i, j;
-    Usuarios temp;
+// Função para calcular a sequência de Knuth
+int calcularGapKnuth(int gaps[], int n) {
+    int k = 0;
+    int gap = 1;
+    
+    // Calcula gaps da sequência de Knuth: 3^k - 1 / 2
+    while (gap < n) {
+        gaps[k++] = gap;
+        gap = gap * 3 + 1;  // Próximo gap: 3*gap + 1
+    }
+    
+    return k;  // Retorna quantidade de gaps
+}
 
-    for (gap = n / 2; gap > 0; gap /= 2) {
-        for (i = gap; i < n; i++) {
-            temp = usuarios[i];
-            j = i;
+// ShellSort otimizado com sequência de Knuth
+void shellsortKnuth(Usuarios* usuarios, int n) {
+    int gap = 1;
+    while (gap < n / 3) {
+        gap = gap * 3 + 1;
+    }
+
+    while (gap >= 1) {
+        for (int i = gap; i < n; i++) {
+            Usuarios temp = usuarios[i];
+            int j = i;
             while (j >= gap && usuarios[j - gap].nota > temp.nota) {
                 usuarios[j] = usuarios[j - gap];
                 j -= gap;
             }
             usuarios[j] = temp;
         }
+        gap /= 3;
     }
 }
 
@@ -91,6 +115,15 @@ int estaOrdenado(Usuarios usuarios[], int n) {
     return 1;
 }
 
+// Função para restaurar o vetor original sem malloc adicional
+void restaurarVetor(Usuarios vetor[], No* topo, int total) {
+    No* atual = topo;
+    for (int i = total - 1; i >= 0; i--) {
+        vetor[i] = atual->dado;
+        atual = atual->prox;
+    }
+}
+
 int main() {
     Pilha pilha;
     inicializarPilha(&pilha);
@@ -98,34 +131,31 @@ int main() {
     int total = lerCSV("ratings.csv", &pilha);
     if (total == 0) return -1;
 
-    // Cria vetor de backup a partir da pilha
-    Usuarios* backup = malloc(total * sizeof(Usuarios));
-    if (!backup) {
-        printf("Erro de memória\n");
-        liberarPilha(&pilha);
-        return -1;
-    }
+    printf("📊 Total de registros lidos: %d\n", total);
+    printf("📥 Memória após leitura: %ld KB\n", getMemoryKB());
 
-    No* atual = pilha.topo;
-    for (int i = total - 1; i >= 0; i--) {
-        backup[i] = atual->dado;
-        atual = atual->prox;
-    }
-
-    double tempos[10];
+    // Aloca apenas UM vetor para trabalho
     Usuarios* vetor = malloc(total * sizeof(Usuarios));
     if (!vetor) {
         printf("Erro de memória\n");
-        free(backup);
         liberarPilha(&pilha);
         return -1;
     }
 
+    // Inicializa o vetor com os dados originais da pilha
+    restaurarVetor(vetor, pilha.topo, total);
+
+    double tempos[10];
+
+    printf("\n🚀 Executando ShellSort com Sequência de Knuth...\n");
+
     for (int exec = 0; exec < 10; exec++) {
-        memcpy(vetor, backup, total * sizeof(Usuarios));
+        if (exec > 0) {
+            restaurarVetor(vetor, pilha.topo, total);
+        }
 
         clock_t inicio = clock();
-        shellsort(vetor, total);
+        shellsortKnuth(vetor, total);
         clock_t fim = clock();
 
         double tempo = (double)(fim - inicio) / CLOCKS_PER_SEC;
@@ -135,14 +165,22 @@ int main() {
                estaOrdenado(vetor, total) ? "Ordenado ✅" : "Não ordenado ❌");
     }
 
-    double soma = 0;
-    for (int i = 0; i < 10; i++) soma += tempos[i];
+    // Estatísticas de tempo
+    double soma = 0.0, menor = tempos[0], maior = tempos[0];
+    for (int i = 0; i < 10; i++) {
+        soma += tempos[i];
+        if (tempos[i] < menor) menor = tempos[i];
+        if (tempos[i] > maior) maior = tempos[i];
+    }
     double media = soma / 10.0;
 
-    printf("\n⏱ Tempo médio de ordenação (10 execuções): %.6f segundos\n", media);
+    printf("\n📈 Estatísticas:\n");
+    printf("⏱ Tempo médio: %.6f segundos\n", media);
+    printf("⏱ Menor tempo: %.6f s | Maior tempo: %.6f s\n", menor, maior);
+    printf("💾 Memória final: %ld KB\n", getMemoryKB());
 
+    // Limpeza
     free(vetor);
-    free(backup);
     liberarPilha(&pilha);
 
     return 0;

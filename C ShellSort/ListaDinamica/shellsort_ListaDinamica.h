@@ -1,8 +1,7 @@
 #ifndef SHELLSORT_LISTADINAMICA_H
 #define SHELLSORT_LISTADINAMICA_H
 
-#define LINHA_MAX 100
-#define MAX 100
+#include "../config.h"
 
 typedef struct {
     int id;

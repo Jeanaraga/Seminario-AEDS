@@ -1,30 +1,33 @@
-#ifndef SHELLSORT_PILHAESTATICA_H
-#define SHELLSORT_PILHAESTATICA_H
+#ifndef SHELLSORT_PILHA_ESTATICA_H
+#define SHELLSORT_PILHA_ESTATICA_H
 
-#define MAX_PILHA 1000
-#define LINHA_MAX 100
-#define MAX 100
+#include "../config.h"
+
+#define MAX_PILHA 1000000  // Tamanho máximo da pilha
+
 
 typedef struct {
     int id;
     int movieID;
     float nota;
     int timestamp;
-} Usuarios;
+} Usuario;
 
 typedef struct {
-    Usuarios dados[MAX_PILHA];
+    Usuario dados[MAX_PILHA];
     int topo;
 } Pilha;
 
+// Funções da pilha
 void inicializarPilha(Pilha* p);
-int empilhar(Pilha* p, Usuarios u);
-int desempilhar(Pilha* p, Usuarios* u);
-int estaVazia(Pilha* p);
-int estaCheia(Pilha* p);
+int pilhaVazia(Pilha* p);
+int pilhaCheia(Pilha* p);
+int empilhar(Pilha* p, Usuario u);
+int desempilhar(Pilha* p, Usuario* u);
 
+// Funções do programa
 int lerCSV(const char* nomeArquivo, Pilha* p);
-void shellsort(Usuarios usuarios[], int n);
-int estaOrdenado(Usuarios usuarios[], int n);
+void shellsortKnuth(Usuario* usuarios, int n);
+int estaOrdenado(Usuario* usuarios, int n);
 
-#endif
+#endif // SHELLSORT_PILHA_ESTATICA_H

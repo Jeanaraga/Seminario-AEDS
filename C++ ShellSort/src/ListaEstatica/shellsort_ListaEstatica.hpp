@@ -1,6 +1,5 @@
-#ifndef LISTA_ESTATICA_HPP
-#define LISTA_ESTATICA_HPP
-
+#ifndef SHELLSORT_LISTA_ESTATICA_HPP
+#define SHELLSORT_LISTA_ESTATICA_HPP
 #include <stdexcept>
 
 template <typename T>
@@ -33,6 +32,13 @@ public:
         }
         return elementos[i];
     }
+    
+    const T& get(size_t i) const {
+        if (i >= tamanho) {
+            throw std::runtime_error("Índice inválido");
+        }
+        return elementos[i];
+    }
 
     size_t size() const {
         return tamanho;
@@ -41,6 +47,10 @@ public:
     bool empty() const {
         return tamanho == 0;
     }
+
+    // Acesso direto aos elementos para ordenação in-place
+    T* data() { return elementos; }
+    const T* data() const { return elementos; }
 };
 
 #endif

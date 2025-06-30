@@ -11,13 +11,14 @@ all: $(EXECUTAVEIS)
 
 # Regra genérica para todos os shellsort_*
 shellsort_%: %/shellsort_%.cpp
-	@echo "🔨 Compilando $@..."
+	@echo "🔨 Compilando $@ com LIMITE=$(LIMITE)..."
 	@if [ -f "$<" ]; then \
-		$(CC) $(CFLAGS) -I$* -o $@ $< && echo "✅ $@ compilado com sucesso!" || echo "❌ Erro ao compilar $@"; \
+		$(CC) $(CFLAGS) -I$* -DLIMITE=$(LIMITE) -DREPETICOES=1 -o $@ $< && echo "✅ $@ compilado com sucesso!"; \
 	else \
 		echo "❌ Arquivo $< não encontrado!"; \
 		exit 1; \
 	fi
+
 
 # Regras específicas como backup (caso a genérica não funcione)
 shellsort_FilaEstatica: FilaEstatica/shellsort_FilaEstatica.cpp
@@ -46,24 +47,23 @@ shellsort_PilhaDinamica: PilhaDinamica/shellsort_PilhaDinamica.cpp
 
 run: all
 	@echo ""
-	@echo "📊 Resultados de tempo de execução:"
+	@echo "📊 Resultados de tempo e memória:"
 	@for exe in $(EXECUTAVEIS); do \
 		if [ -f "./$$exe" ]; then \
 			echo ""; \
 			echo "🏃 Executando $$exe..."; \
-			START=$$(date +%s.%N); \
-			./$$exe 2>&1; \
-			END=$$(date +%s.%N); \
-			if command -v bc >/dev/null 2>&1; then \
-				TIME=$$(echo "scale=10; $$END - $$START" | bc 2>/dev/null); \
-				if [ ! -z "$$TIME" ]; then \
-					printf "⏱ Tempo total (real): %.6f segundos\n" "$$TIME"; \
-				fi; \
+			/usr/bin/time -v ./$$exe 2> stats_$$exe.txt; \
+			if grep "Maximum resident set size" stats_$$exe.txt >/dev/null; then \
+				echo "🧠 Memória Máxima: $$(grep 'Maximum resident set size' stats_$$exe.txt | awk '{print $$6}') KB"; \
+			fi; \
+			if grep "Elapsed (wall clock) time" stats_$$exe.txt >/dev/null; then \
+				echo "⏱ Tempo Real: $$(grep 'Elapsed (wall clock) time' stats_$$exe.txt | awk '{print $$8}')"; \
 			fi; \
 		else \
 			echo "❌ $$exe não foi compilado"; \
 		fi; \
 	done
+
 
 clean:
 	@echo "🧹 Limpando executáveis..."
@@ -113,5 +113,8 @@ debug:
 			echo "  ❌ shellsort_$$dir.hpp não encontrado"; \
 		fi; \
 	done
+
+
+
 
 .PHONY: all run clean compile-one test-all debug

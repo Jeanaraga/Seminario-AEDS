@@ -1,9 +1,11 @@
 #ifndef SHELLSORT_FILAESTATICA_H
 #define SHELLSORT_FILAESTATICA_H
 
-#define LINHA_MAX 100
-#define MAX_FILA 1000
-#define MAX 100
+
+#define MAX_FILA 1000000
+
+#include "../config.h"
+
 
 typedef struct {
     int id;
