@@ -37,63 +37,63 @@ public class Main {
 
 
         // PILHA
-        // PilhaLinear pilhaOriginal = LerRatings.lerRatingsPilhaLinear(arquivo, quantidade);
-        // Stack<Double> pilhaStackOriginal = LeitorRatingsDinamico.lerRatingsPilhaDinamica(arquivo, quantidade);
+        PilhaLinear pilhaOriginal = LerRatings.lerRatingsPilhaLinear(arquivo, quantidade);
+        Stack<Double> pilhaStackOriginal = LeitorRatingsDinamico.lerRatingsPilhaDinamica(arquivo, quantidade);
 
-        // double somaTempoPilha = 0;
-        // double somaTempoPilhaStack = 0;
+        double somaTempoPilha = 0;
+        double somaTempoPilhaStack = 0;
 
-        // for (int i = 0; i < 100; i++) {
-        //     PilhaLinear copiaPilha = new PilhaLinear(quantidade);
-        //     for (double val : pilhaOriginal.toArray()) {
-        //         copiaPilha.push(val);
-        //     }
+        for (int i = 0; i < 100; i++) {
+            PilhaLinear copiaPilha = new PilhaLinear(quantidade);
+            for (double val : pilhaOriginal.toArray()) {
+                copiaPilha.push(val);
+            }
 
-        //     Stack<Double> copiaPilhaStack = new Stack<>();
-        //     copiaPilhaStack.addAll(pilhaStackOriginal);
+            Stack<Double> copiaPilhaStack = new Stack<>();
+            copiaPilhaStack.addAll(pilhaStackOriginal);
 
-        //     long inicioPilha = System.nanoTime();
-        //     ShellSortLinear.ordenarPilha(copiaPilha);
-        //     long fimPilha = System.nanoTime();
-        //     somaTempoPilha += (fimPilha - inicioPilha) / 1_000_000.0;
+            long inicioPilha = System.nanoTime();
+            ShellSortLinear.ordenarPilha(copiaPilha);
+            long fimPilha = System.nanoTime();
+            somaTempoPilha += (fimPilha - inicioPilha) / 1_000_000.0;
 
-        //     long inicioPilhaStack = System.nanoTime();
-        //     ShellSortDinamico.ordenarPilha(copiaPilhaStack);
-        //     long fimPilhaStack = System.nanoTime();
-        //     somaTempoPilhaStack += (fimPilhaStack - inicioPilhaStack) / 1_000_000.0;
-        // }
+            long inicioPilhaStack = System.nanoTime();
+            ShellSortDinamico.ordenarPilha(copiaPilhaStack);
+            long fimPilhaStack = System.nanoTime();
+            somaTempoPilhaStack += (fimPilhaStack - inicioPilhaStack) / 1_000_000.0;
+        }
 
-        // System.out.printf("Tempo médio de ordenação da pilha linear: %.3f ms%n", somaTempoPilha / 100);
-        // System.out.printf("Tempo médio de ordenação da pilha dinâmica: %.3f ms%n", somaTempoPilhaStack / 100);
+        System.out.printf("Tempo médio de ordenação da pilha linear: %.3f ms%n", somaTempoPilha / 100);
+        System.out.printf("Tempo médio de ordenação da pilha dinâmica: %.3f ms%n", somaTempoPilhaStack / 100);
 
         // FILA
-        // FilaLinear filaOriginal = LerRatings.lerRatingsFilaLinear(arquivo, quantidade);
-        // Queue<Double> filaQueueOriginal = LeitorRatingsDinamico.lerRatingsFila(arquivo, quantidade);
+        FilaLinear filaOriginal = LerRatings.lerRatingsFilaLinear(arquivo, quantidade);
+        Queue<Double> filaQueueOriginal = LeitorRatingsDinamico.lerRatingsFila(arquivo, quantidade);
 
-        // double somaTempoFila = 0;
-        // double somaTempoFilaQueue = 0;
+        double somaTempoFila = 0;
+        double somaTempoFilaQueue = 0;
 
-        // for (int i = 0; i < 100; i++) {
-        //     FilaLinear copiaFila = new FilaLinear(quantidade);
-        //     for (double val : filaOriginal.toArray()) {
-        //         copiaFila.enfileirar(val);
-        //     }
+        for (int i = 0; i < 100; i++) {
+            FilaLinear copiaFila = new FilaLinear(quantidade);
+            for (double val : filaOriginal.toArray()) {
+                copiaFila.enfileirar(val);
+            }
 
-        //     Queue<Double> copiaFilaQueue = new java.util.LinkedList<>(filaQueueOriginal);
+            Queue<Double> copiaFilaQueue = new java.util.LinkedList<>(filaQueueOriginal);
 
-        //     long inicioFila = System.nanoTime();
-        //     ShellSortLinear.ordenarFila(copiaFila);
-        //     long fimFila = System.nanoTime();
-        //     somaTempoFila += (fimFila - inicioFila) / 1_000_000.0;
+            long inicioFila = System.nanoTime();
+            ShellSortLinear.ordenarFila(copiaFila);
+            long fimFila = System.nanoTime();
+            somaTempoFila += (fimFila - inicioFila) / 1_000_000.0;
 
-        //     long inicioFilaQueue = System.nanoTime();
-        //     ShellSortDinamico.ordenarFila(copiaFilaQueue);
-        //     long fimFilaQueue = System.nanoTime();
-        //     somaTempoFilaQueue += (fimFilaQueue - inicioFilaQueue) / 1_000_000.0;
-        // }
+            long inicioFilaQueue = System.nanoTime();
+            ShellSortDinamico.ordenarFila(copiaFilaQueue);
+            long fimFilaQueue = System.nanoTime();
+            somaTempoFilaQueue += (fimFilaQueue - inicioFilaQueue) / 1_000_000.0;
+        }
 
-        // System.out.printf("Tempo médio de ordenação da fila linear: %.3f ms%n", somaTempoFila / 100);
-        // System.out.printf("Tempo médio de ordenação da fila dinâmica: %.3f ms%n", somaTempoFilaQueue / 100);
+        System.out.printf("Tempo médio de ordenação da fila linear: %.3f ms%n", somaTempoFila / 100);
+        System.out.printf("Tempo médio de ordenação da fila dinâmica: %.3f ms%n", somaTempoFilaQueue / 100);
 
     }
 }
